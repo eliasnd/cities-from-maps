@@ -1,6 +1,8 @@
 import * as THREE from "/node_modules/three/build/three.module.js";
 import * as Utils from "./utils.js";
 import * as Geometry from "../geometry.js";
+import { CSG } from "./csg.js";
+import { ThreeBSP } from "./ThreeCSG.js";
 
 const minBuildingHeight = 20;
 const maxBuildingHeight = 60;
@@ -19,6 +21,8 @@ const maxVSegSize = 10;
 // Horizontal segments -- windows
 const minHSegSize = 5;
 const maxHSegSize = 10;
+
+const windowMat = new THREE.MeshPhongMaterial({shininess: 100, color: 0xe1eff5});
 
 var params = {
 	vSegSize: null,
@@ -138,7 +142,6 @@ function hSeparator(height, width, mat) {
 }
 
 function hWall(height, width, mat) {
-	let geometry = new THREE.PlaneGeometry(width, height, 1);
 
 	let segCount = Math.floor(width / params.vSegSize);
 	let padding = width - segCount * params.vSegSize;
@@ -153,23 +156,26 @@ function hWall(height, width, mat) {
 	}
 
 	let lPadding = new THREE.Mesh(new THREE.PlaneGeometry(padding/2, height, 1), mat);
-	lPadding.translateX(-width/2 + padding/4);
-
 	let rPadding = lPadding.clone();
-	rPadding.translateX(width/2-padding/4);
+
+	lPadding.translateX(-width/2 + padding/4);
+	rPadding.translateX(width/2 - padding/4);
 
 	group.add(lPadding);
 	group.add(rPadding);
 
 	return group;
-	return new THREE.Mesh(geometry, mat);
 }
 
 function wallPiece(height, width, mat) {
 	let group = new THREE.Group();
 
 	let wall = new THREE.Mesh(new THREE.PlaneGeometry(width, height, 1), mat);
-	let windowMesh = params.windowStyle.clone();
+	// let windowMesh = params.windowStyle.clone();
+
+	// Make window naively
+	let windowGeom = new THREE.BoxGeometry(width * 0.5, height * 0.5, 0.1);
+	let windowMesh = new THREE.Mesh(windowGeom, windowMat);
 
 	group.add(wall);
 	group.add(windowMesh);
@@ -182,14 +188,27 @@ function roofSection(poly, height) {
 
 	let result = new THREE.Group();
 
-	for (var edge of poly.edges)
-		result.add(singleWall(edge, height, mat));
+	// for (var edge of poly.edges)
+		// result.add(singleWall(edge, height, mat));
 
-	let roofGeom = Utils.extrudePoly(poly, 1);
-	roofGeom.translate(0, height, 0);
+	// let outerRoofGeom = Utils.extrudePoly(poly, height);
+
+	// let innerRoofGeom = Utils.extrudePoly(new Geometry.Polygon(poly.points.map(pt => pt.mult(0.5))), height/2);
+	//let innerRoofGeom = outerRoofGeom.clone();
+	// innerRoofGeom.translate(0, height/2, 0);
+
+	// let roofMesh = new ThreeBSP(outerRoofGeom).subtract(new ThreeBSP(innerRoofGeom)).toMesh();
+	// let roofGeom = new ThreeBSP(outerRoofGeom).toGeometry();
+	// let roofMesh = new ThreeBSP(innerRoofGeom).toMesh();
+
+	// roofGeom.translate(0, height, 0);
+	// let roofMesh = new THREE.Mesh(roofGeom, mat);
+
+	let roofGeom = Utils.depressedPoly(poly, height, height/2);
+	// console.log(roofGeom);
 	let roofMesh = new THREE.Mesh(roofGeom, mat);
 
 	result.add(roofMesh);
 	
-	return result;
+	return roofMesh;
 }
