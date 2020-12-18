@@ -1,0 +1,48 @@
+body {
+	text-align: center;
+}
+
+.menu-container {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	border: solid;
+	border-color: black;
+	border-width: 2px;
+	padding: 20px;
+	border-radius: 25px;
+}
+
+#map-drawer {
+	position: relative;
+	border: solid;
+	border-radius: 25px;
+	width: calc(min(100vh, 100vw) * 0.7);
+	height: calc(min(100vh, 100vw) * 0.7);
+	left: 50%;
+	margin-left: calc(min(100vh, 100vw) * -0.35);
+	top: 10vh;
+}
+
+#buttons {
+	position: relative;
+	top: 12vh;
+}
+
+#back-button {
+	position: relative;
+	right: 20px;
+}
+
+#save-button {
+	position: relative;
+	left: 20px;
+}
+
+#title {
+	font-size: 36px;
+}
+
+#credits {
+	font-size: 20px;
+}

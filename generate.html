@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="https://unpkg.com/purecss@2.0.3/build/pure-min.css" integrity="//opensource.keycdn.com/pure/2.0.3/pure-min.css" crossorigin="anonymous">
+		<script type="module" src="scripts/generator/generator.js"></script>
+		<link rel="stylesheet" href="index.css">
+	</head>
+	<body>
+		<script type="module">
+			import { handleSubmit } from "./scripts/generator/generator.js";
+			window.handleSubmit = handleSubmit;
+		</script>
+
+		<div id="form-container" class="menu-container" style="position: relative; width: 500px; top: 30vh; left: calc(50% - 250px);">
+			<form id="generateForm" class="pure-form">
+				<label for="map-file">Map:</label>
+				<input type="file" id="map-file">
+				<br> <br>
+				<label for="lot-size">Maximum Lot Size: </label>
+				<input type="number" id="lot-size" step=0.1 value=2000 style="width: 80px;">
+				<br> <br> 
+			</form>
+			<button class="pure-button" id="submit" onclick="handleSubmit();">Submit</button>
+		</div>
+		<div id="threejs" style="position: absolute; display: none;"></div>
+		<canvas id="map" style="position: absolute; right: 10px; top: 10px; display: none;" width=300, height=300></canvas>
+	</body>
+</html>
