@@ -6,11 +6,11 @@ const minBuildingHeight = 20;
 const maxBuildingHeight = 60;
 
 // Height of ground section. Contains door and can be visually distinct from upper section
-const minGroundHeight = 10;
-const maxGroundHeight = 15;
+const minGroundHeight = 5;
+const maxGroundHeight = 10;
 
-const minRoofHeight = 5;
-const maxRoofHeight = 10;
+const minRoofHeight = 3;
+const maxRoofHeight = 6;
 
 // Vertical segments -- floors
 const minVSegSize = 5;
@@ -19,6 +19,12 @@ const maxVSegSize = 10;
 // Horizontal segments -- windows
 const minHSegSize = 5;
 const maxHSegSize = 10;
+
+const windowMat = new THREE.MeshPhongMaterial({shininess: 100, color: 0xe1eff5});
+
+const roofColors = [0xc0c2a5, 0xdbe3d5, 0xa9bdcc];
+const midColors = [0x8c6d57, 0xbfbfbf, 0x616769, 0x999999, 0xa36240, 0xd4c081, 0xe3decc];
+const groundColors = [0x7c8b91, 0xa6a6a6, 0x524642];
 
 var params = {
 	vSegSize: null,
@@ -52,7 +58,7 @@ export function building(poly, windowStyle, doorStyle) {
 }
 
 function groundSection(poly, height) {
-	let mat = new THREE.MeshLambertMaterial({color: 0x7c8b91});
+	let mat = new THREE.MeshLambertMaterial({color: groundColors[Math.floor(Utils.randRange(0, groundColors.length))]});
 
 	let result = new THREE.Group();
 
@@ -63,13 +69,31 @@ function groundSection(poly, height) {
 }
 
 function middleSection(poly, height) {
-	let mat = new THREE.MeshLambertMaterial({color: 0x8c6d57});
+	let mat = new THREE.MeshLambertMaterial({color: midColors[Math.floor(Utils.randRange(0, midColors.length))]});
 
 	let result = new THREE.Group();
 
 	poly.edges.map(edge => { result.add(segmentedWall(edge, height, mat)); });
 	// poly.edges.map(edge => { result.add(singleWall(edge, height, mat)); });
 
+	return result;
+}
+
+function roofSection(poly, height) {
+	// let mat = new THREE.MeshLambertMaterial({color: 0xf5dd42});
+	let mat = new THREE.MeshLambertMaterial({color: roofColors[Math.floor(Utils.randRange(0, roofColors.length))]});
+
+	let result = new THREE.Group();
+
+	// for (var edge of poly.edges)
+		// result.add(singleWall(edge, height, mat));
+
+	let roofGeom = Utils.extrudePoly(poly.adjust(1), height);
+	// roofGeom.translate(0, height, 0);
+	let roofMesh = new THREE.Mesh(roofGeom, mat);
+
+	result.add(roofMesh);
+	
 	return result;
 }
 
@@ -138,7 +162,6 @@ function hSeparator(height, width, mat) {
 }
 
 function hWall(height, width, mat) {
-	let geometry = new THREE.PlaneGeometry(width, height, 1);
 
 	let segCount = Math.floor(width / params.vSegSize);
 	let padding = width - segCount * params.vSegSize;
@@ -153,43 +176,29 @@ function hWall(height, width, mat) {
 	}
 
 	let lPadding = new THREE.Mesh(new THREE.PlaneGeometry(padding/2, height, 1), mat);
-	lPadding.translateX(-width/2 + padding/4);
-
 	let rPadding = lPadding.clone();
-	rPadding.translateX(width/2-padding/4);
+
+	lPadding.translateX(-width/2 + padding/4);
+	rPadding.translateX(width/2 - padding/4);
 
 	group.add(lPadding);
 	group.add(rPadding);
 
 	return group;
-	return new THREE.Mesh(geometry, mat);
 }
 
 function wallPiece(height, width, mat) {
 	let group = new THREE.Group();
 
 	let wall = new THREE.Mesh(new THREE.PlaneGeometry(width, height, 1), mat);
-	let windowMesh = params.windowStyle.clone();
+	// let windowMesh = params.windowStyle.clone();
+
+	// Make window naively
+	let windowGeom = new THREE.BoxGeometry(width * 0.5, height * 0.5, 0.1);
+	let windowMesh = new THREE.Mesh(windowGeom, windowMat);
 
 	group.add(wall);
 	group.add(windowMesh);
 
 	return group;
-}
-
-function roofSection(poly, height) {
-	let mat = new THREE.MeshLambertMaterial({color: 0xf5dd42});
-
-	let result = new THREE.Group();
-
-	for (var edge of poly.edges)
-		result.add(singleWall(edge, height, mat));
-
-	let roofGeom = Utils.extrudePoly(poly, 1);
-	roofGeom.translate(0, height, 0);
-	let roofMesh = new THREE.Mesh(roofGeom, mat);
-
-	result.add(roofMesh);
-	
-	return result;
 }

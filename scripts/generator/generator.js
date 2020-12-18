@@ -89,9 +89,17 @@ function generate(mapObj) {
 			poly: p.centered()
 		};
 	});
+
+	blocks = blocks.map(b => {
+		let bbox = b.boundingBox();
+		return {
+			pos: new Point((bbox.left + bbox.right) / 2, (bbox.top + bbox.bottom) / 2),
+			poly: b.centered()
+		};
+	});
 	
 
-	loadMap({map: mapObj, plots: plots});
+	loadMap({map: mapObj, blocks: blocks, plots: plots});
 }
 
 // Returns all enclosed "blocks" in map as polygon objects

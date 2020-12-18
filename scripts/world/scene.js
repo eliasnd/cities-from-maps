@@ -1,56 +1,62 @@
 import * as THREE from "/node_modules/three/build/three.module.js";
 import { OrbitControls } from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { OBJLoader } from '/node_modules/three/examples/jsm/loaders/OBJLoader.js';
+import { EffectComposer } from '/node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '/node_modules/three/examples/jsm/postprocessing/RenderPass.js';
+import { BloomPass } from '/node_modules/three/examples/jsm/postprocessing/BloomPass.js';
+import { SSAOPass } from '/node_modules/three/examples/jsm/postprocessing/SSAOPass.js';
+
+import * as Utils from "./utils.js";
+import * as Geometry from "../geometry.js";
 import { building } from "./building.js";
 
-let scene, camera, controls, renderer;
+const container = document.getElementById("threejs");
 
-let rendererElement, mapElement, formElement;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xcce0ff );
+scene.add( new THREE.AmbientLight( 0x666666 ) );
+scene.add( new THREE.DirectionalLight(0xffffff, 0.5));
 
-init();
+const camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 10000 );
+camera.position.set( 1000, 500, 0 );
+camera.lookAt(0, 0, 0);
 
-function init() {
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+container.appendChild( renderer.domElement );
 
-	rendererElement = document.getElementById("threejs");
-	mapElement = document.getElementById("map");
-	formElement = document.getElementById("form-container");
+const controls = new OrbitControls(camera, renderer.domElement);
 
-	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0xcce0ff );
-	// scene.fog = new THREE.Fog( 0xcce0ff, 500, 10000 );
+// Post-processing 
 
-	scene.add( new THREE.AmbientLight( 0x666666 ) );
-	scene.add( new THREE.DirectionalLight(0xffffff, 0.5));
+const composer = new EffectComposer(renderer);
+composer.setSize(renderer.domElement.width, renderer.domElement.height);
 
-	const groundTex = new THREE.TextureLoader().load( 'scripts/textures/grasstex.jpg' );
-	groundTex.wrapS = THREE.RepeatWrapping;
-	groundTex.wrapT = THREE.RepeatWrapping;
-	groundTex.repeat.set(50, 50);
-	const groundMaterial = new THREE.MeshLambertMaterial( { map: groundTex } );
+const renderPass = new RenderPass( scene, camera );
+composer.addPass( renderPass );
 
-	let ground = new THREE.Mesh( new THREE.PlaneBufferGeometry( 20000, 20000 ), groundMaterial );
-	ground.position.y = 0;
-	ground.rotation.x = - Math.PI / 2;
-	ground.receiveShadow = true;
-	scene.add( ground );
 
-	camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.set( 1000, 500, 0 );
-	camera.lookAt(0, 0, 0);
+// Ground
 
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	rendererElement.appendChild( renderer.domElement );
+const groundTex = new THREE.TextureLoader().load( 'scripts/textures/grasstex.jpg' );
+groundTex.wrapS = THREE.RepeatWrapping;
+groundTex.wrapT = THREE.RepeatWrapping;
+groundTex.repeat.set(50, 50);
+const groundMaterial = new THREE.MeshLambertMaterial( { map: groundTex } );
 
-	controls = new OrbitControls(camera, renderer.domElement);
-	animate();
-}
+let ground = new THREE.Mesh( new THREE.PlaneBufferGeometry( 20000, 20000 ), groundMaterial );
+ground.position.y = 0;
+ground.rotation.x = - Math.PI / 2;
+ground.receiveShadow = true;
+scene.add( ground );
+
+animate();
 
 function animate() {
 
 	controls.update();
 	requestAnimationFrame( animate );
-	renderer.render(scene, camera);
+	composer.render();
 
 }
 
@@ -61,38 +67,30 @@ export function loadMap(mapInfo) {
 	let windowStyles = [];
 	let doorStyles = [];
 
-	const manager = new THREE.LoadingManager();
+	for (let plot of mapInfo.plots) {
+		
+		let obj = building(plot.poly, windowStyles[0], doorStyles[0]);
 
-	const loader = new OBJLoader(manager);
-	loader.load('../objs/basic_window.obj', (obj) => { 
-		// obj.scale.set(0.25, 0.25, 0.25);
-		// obj.rotateX(90);
-		windowStyles.push(obj); 
-	});
-	loader.load('../objs/door_high_poly.obj', (obj) => { doorStyles.push(obj); });
-
-	var buildingTex = new THREE.TextureLoader(manager).load( 'scripts/textures/buildingtex.jpeg' );
-
-	manager.onLoad = () => {
-		buildingTex.wrapS = THREE.ClampToEdgeWrapping;
-		buildingTex.wrapT = THREE.RepeatWrapping;
-		let repeatX = 1;
-		let repeatY = 1;
-		buildingTex.repeat.set(repeatX, repeatY);
-		buildingTex.offset.x = (repeatX - 1) / 2 * -1;
-
-		for (var plot of mapInfo.plots) {
-			
-			let obj = building(plot.poly, windowStyles[0], doorStyles[0]);
-
-			obj.position.set(plot.pos.x, 0, plot.pos.y);
-			scene.add(obj);
-		}
-
-		rendererElement.style.display = "block";
-		mapElement.style.display = "block";
-		formElement.style.display = "none";
-
-		console.log(scene);
+		obj.position.set(plot.pos.x, 0, plot.pos.y);
+		scene.add(obj);
 	}
+
+	let sidewalkMat = new THREE.MeshLambertMaterial({color: 0x8c8c8c});
+	let roadMat = new THREE.MeshLambertMaterial({color: 0x555555});
+
+	for (let block of mapInfo.blocks) {
+		let sidewalk = new THREE.Mesh(Utils.extrudePoly(block.poly.adjust(8), 2), sidewalkMat);
+		sidewalk.position.set(block.pos.x, 0, block.pos.y);
+		scene.add(sidewalk);	
+
+		let road = new THREE.Mesh(Utils.extrudePoly(block.poly.adjust(30), 1), roadMat);
+		road.position.set(block.pos.x, 0, block.pos.y);
+		scene.add(road);
+	}
+
+	container.style.display = "block";
+	document.getElementById("map").style.display = "block";
+	document.getElementById("form-container").style.display = "none";
+
+	console.log(scene);
 }

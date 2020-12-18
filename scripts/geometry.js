@@ -337,6 +337,29 @@ Polygon.prototype.orderCW = function() {
 	}
 }
 
+Polygon.prototype.adjust = function(amount) {
+	this.orderCW();
+
+	let center = this.center();
+
+	let d = amount/2;	// Distance to shift edges
+	let newEdges = [];
+
+	for (let e = 0; e < this.edges.length; e++) {
+		let edge = this.edges[e];
+		let o = d / Math.sqrt(Math.pow(edge.p1.x - edge.p2.x, 2) + Math.pow(edge.p1.y - edge.p2.y, 2));
+		let newPt = new Point(edge.p1.x - (edge.p2.y - edge.p1.y)*o, edge.p1.y + (edge.p2.x - edge.p1.x) * o);
+
+		/* if (Geometry.dist(newPt, center) > Geometry.dist(edge.p1, center)) {
+			newPt = new Point(edge.p1.x + (edge.p2.y - edge.p1.y)*o, edge.p1.y - (edge.p2.x - edge.p1.x) * o);
+		} */
+		newEdges.push(lineFromPoint(edge.slope(), newPt));	
+	}
+
+	return polygonFromEdges(newEdges);
+}
+
+
 export var polygonFromEdges = (edges) => {
 	let points = [];
 	for (let e = 0; e < edges.length; e++) {
