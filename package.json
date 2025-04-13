@@ -1,0 +1,16 @@
+{
+  "name": "12.-end-0-cities-from-maps",
+  "version": "1.0.0",
+  "description": "This project allows a user to turn a map into a procedurally generated city. Cities currently feature roads, sidewalks, and buildings.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "http-server": "^14.1.1",
+    "three": "^0.175.0"
+  }
+}
